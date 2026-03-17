@@ -4,23 +4,23 @@ import pandas as pd
 from datetime import datetime
 import time
 
-# 1. 터미널 스타일 및 색상 커스텀 설정
-st.set_page_config(page_title="Terminal Monitoring", layout="wide")
+# 1. 터미널 스타일 디자인 및 색상 설정
+st.set_page_config(page_title="SHOPPING MONITOR TERMINAL", layout="wide")
 st.markdown("""
     <style>
-    .reportview-container, .main { background: #0e1117; }
+    .main { background-color: #0e1117; }
     .status-text { 
         font-family: 'Courier New', monospace; 
         line-height: 1.6; 
-        padding: 10px;
+        padding: 15px;
         background-color: #1a1c23;
-        border-radius: 5px;
+        border-radius: 8px;
+        border-left: 5px solid #4b4b4b;
     }
-    .stButton>button { background-color: #262730; color: white; border: 1px solid #4b4b4b; }
-    .my-item { color: #FF0000; font-weight: bold; }      /* 빨간색 */
-    .comp-item { color: #FFFFFF; }                      /* 흰색 */
-    .orig-item { color: #3d9dfd; }                      /* 원부 유지 (파란색) */
-    .query-title { color: #FFD700; font-weight: bold; margin-top: 15px; } /* 검색어 노란색 */
+    .my-item { color: #FF0000; font-weight: bold; }      /* 우리 상품: 빨간색 */
+    .comp-item { color: #FFFFFF; }                      /* 경쟁사: 흰색 */
+    .orig-item { color: #3d9dfd; }                      /* 원부: 파란색 유지 */
+    .query-title { color: #FFD700; font-weight: bold; margin-top: 20px; font-size: 1.1em; } 
     </style>
 """, unsafe_allow_html=True)
 
@@ -38,12 +38,12 @@ def get_naver_rank(target, client_id, client_secret):
     except:
         return []
 
-# 보안 설정: Secrets 활용
+# 2. 보안 설정 (Secrets)
 try:
     C_ID = st.secrets["NAVER_CLIENT_ID"]
     C_SECRET = st.secrets["NAVER_CLIENT_SECRET"]
 except:
-    st.error("⚠️ Streamlit Cloud 설정(Secrets)에서 API 키를 설정해주세요.")
+    st.error("⚠️ Streamlit Cloud 설정(Secrets)에서 NAVER_CLIENT_ID와 NAVER_CLIENT_SECRET을 설정해주세요.")
     st.stop()
 
 MONITORING_TARGETS = [
@@ -56,12 +56,12 @@ MONITORING_TARGETS = [
 st.title("🖥️ SHOPPING MONITOR TERMINAL")
 
 if st.button("RUN MONITORING"):
-    full_report_text = "" # 복사용 텍스트 담기
+    full_report_text = f"📊 모니터링 리포트 ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})\n\n"
     
     for target in MONITORING_TARGETS:
         query = target["query"]
         st.markdown(f"<div class='query-title'>🔎 현재 검색 중: [{query}]</div>", unsafe_allow_html=True)
-        full_report_text += f"🔎 현재 검색 중: [{query}]\n"
+        full_report_text += f"🔎 [{query}]\n"
         
         items = get_naver_rank(target, C_ID, C_SECRET)
         found = False
@@ -73,7 +73,7 @@ if st.button("RUN MONITORING"):
             title = item.get('title', '').replace('<b>', '').replace('</b>', '')
             product_id = item.get('productId', '')
 
-            # 1. 내 상품 (빨간색)
+            # 1. 우리 상품 (빨간색)
             if target["my_mall"] in mall_name:
                 display_html += f"✅ <span class='my-item'>[내 상품] {rank:2d}위</span> | {title[:45]}...<br>"
                 full_report_text += f"✅ [내 상품] {rank}위 | {title[:45]}...\n"
@@ -86,14 +86,14 @@ if st.button("RUN MONITORING"):
                     full_report_text += f"🚨 [경쟁사] {rank}위 | {title[:45]}...\n"
                     found = True
             
-            # 3. 원부 (파란색 유지)
+            # 3. 원부 (파란색)
             if product_id in target["target_mids"]:
                 display_html += f"🎯 <span class='orig-item'>[원 부] {rank:2d}위</span> | {title[:45]}...<br>"
                 full_report_text += f"🎯 [원 부] {rank}위 | {title[:45]}...\n"
                 found = True
         
         if not found:
-            display_html += "❌ 40위 내 검색 결과 없음<br>"
+            display_html += "<span style='color:#777;'>❌ 40위 내 검색 결과 없음</span><br>"
             full_report_text += "❌ 40위 내 검색 결과 없음\n"
         
         display_html += "</div>"
@@ -101,7 +101,11 @@ if st.button("RUN MONITORING"):
         full_report_text += "\n"
         time.sleep(0.3)
     
-    # 📋 복사하기 기능 (텍스트 에어리어와 버튼 제공)
-    st.divider()
-    st.subheader("📋 Copy Report")
-    st.text_area("아래 내용을 복사해서 사용하세요.", value=full_report_text, height=200)
+    # 📋 텍스트 복사 영역 (st.text_area)
+    st.write("---")
+    st.subheader("📋 리포트 복사하기")
+    st.text_area(
+        label="아래 박스 우측 상단의 아이콘을 눌러 복사하세요.",
+        value=full_report_text,
+        height=300
+    )
