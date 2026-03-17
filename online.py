@@ -4,15 +4,23 @@ import pandas as pd
 from datetime import datetime
 import time
 
-# 1. 터미널 스타일 디자인 설정
+# 1. 터미널 스타일 및 색상 커스텀 설정
 st.set_page_config(page_title="Terminal Monitoring", layout="wide")
 st.markdown("""
     <style>
     .reportview-container, .main { background: #0e1117; }
-    .stCodeBlock, div[data-testid="stMarkdownContainer"] { color: #e0e0e0; font-family: 'Courier New', Courier, monospace; }
-    h1, h2, h3 { color: #ffffff !important; }
-    .stButton>button { background-color: #262730; color: white; border-radius: 5px; border: 1px solid #4b4b4b; }
-    .status-text { font-family: 'Courier New', monospace; line-height: 1.6; }
+    .status-text { 
+        font-family: 'Courier New', monospace; 
+        line-height: 1.6; 
+        padding: 10px;
+        background-color: #1a1c23;
+        border-radius: 5px;
+    }
+    .stButton>button { background-color: #262730; color: white; border: 1px solid #4b4b4b; }
+    .my-item { color: #FF0000; font-weight: bold; }      /* 빨간색 */
+    .comp-item { color: #FFFFFF; }                      /* 흰색 */
+    .orig-item { color: #3d9dfd; }                      /* 원부 유지 (파란색) */
+    .query-title { color: #FFD700; font-weight: bold; margin-top: 15px; } /* 검색어 노란색 */
     </style>
 """, unsafe_allow_html=True)
 
@@ -23,26 +31,14 @@ def get_naver_rank(target, client_id, client_secret):
         "X-Naver-Client-Secret": client_secret,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     }
-    
-    query = target["query"]
-    my_mall = target["my_mall"]
-    target_malls = target.get("target_mall", [])
-    if isinstance(target_malls, str): target_malls = [target_malls]
-    target_mids = target.get("target_mids", [])
-
-    # 요청하신 대로 다시 40위까지로 설정
-    params = {"query": query, "display": 40, "start": 1, "sort": "sim"}
-    
+    params = {"query": target["query"], "display": 40, "start": 1, "sort": "sim"}
     try:
         response = requests.get(url, headers=headers, params=params)
-        if response.status_code == 200:
-            return response.json().get('items', [])
+        return response.json().get('items', []) if response.status_code == 200 else []
     except:
         return []
-    return []
 
-# 2. 보안 설정: Secrets에서 값 가져오기 (사이드바 입력창 제거)
-# st.secrets를 사용하면 코드에 직접 노출되지 않습니다.
+# 보안 설정: Secrets 활용
 try:
     C_ID = st.secrets["NAVER_CLIENT_ID"]
     C_SECRET = st.secrets["NAVER_CLIENT_SECRET"]
@@ -60,41 +56,52 @@ MONITORING_TARGETS = [
 st.title("🖥️ SHOPPING MONITOR TERMINAL")
 
 if st.button("RUN MONITORING"):
-    container = st.container()
-    with container:
-        for target in MONITORING_TARGETS:
-            query = target["query"]
-            st.markdown(f"**🔎 현재 검색 중: [{query}]**")
-            
-            items = get_naver_rank(target, C_ID, C_SECRET)
-            found = False
-            
-            output_html = "<div class='status-text'>"
-            for idx, item in enumerate(items):
-                rank = idx + 1
-                mall_name = item.get('mallName', '')
-                title = item.get('title', '').replace('<b>', '').replace('</b>', '')
-                product_id = item.get('productId', '')
+    full_report_text = "" # 복사용 텍스트 담기
+    
+    for target in MONITORING_TARGETS:
+        query = target["query"]
+        st.markdown(f"<div class='query-title'>🔎 현재 검색 중: [{query}]</div>", unsafe_allow_html=True)
+        full_report_text += f"🔎 현재 검색 중: [{query}]\n"
+        
+        items = get_naver_rank(target, C_ID, C_SECRET)
+        found = False
+        
+        display_html = "<div class='status-text'>"
+        for idx, item in enumerate(items):
+            rank = idx + 1
+            mall_name = item.get('mallName', '')
+            title = item.get('title', '').replace('<b>', '').replace('</b>', '')
+            product_id = item.get('productId', '')
 
-                # 내 상품
-                if target["my_mall"] in mall_name:
-                    output_html += f"✅ [내 상품] {rank:2d}위 | {title[:40]}...<br>"
-                    found = True
-                
-                # 경쟁사
-                for tm in target["target_mall"]:
-                    if tm in mall_name:
-                        output_html += f"<span style='color:#ff4b4b;'>🚨 [경쟁사] {rank:2d}위</span> | {title[:40]}...<br>"
-                        found = True
-                
-                # 원부
-                if product_id in target["target_mids"]:
-                    output_html += f"<span style='color:#3d9dfd;'>🎯 [원 부] {rank:2d}위</span> | {title[:40]}...<br>"
+            # 1. 내 상품 (빨간색)
+            if target["my_mall"] in mall_name:
+                display_html += f"✅ <span class='my-item'>[내 상품] {rank:2d}위</span> | {title[:45]}...<br>"
+                full_report_text += f"✅ [내 상품] {rank}위 | {title[:45]}...\n"
+                found = True
+            
+            # 2. 경쟁사 (흰색)
+            for tm in target["target_mall"]:
+                if tm in mall_name:
+                    display_html += f"🚨 <span class='comp-item'>[경쟁사] {rank:2d}위</span> | {title[:45]}...<br>"
+                    full_report_text += f"🚨 [경쟁사] {rank}위 | {title[:45]}...\n"
                     found = True
             
-            if not found:
-                output_html += "❌ 40위 내 검색 결과 없음<br>"
-            
-            output_html += "</div><br>"
-            st.markdown(output_html, unsafe_allow_html=True)
-            time.sleep(0.3)
+            # 3. 원부 (파란색 유지)
+            if product_id in target["target_mids"]:
+                display_html += f"🎯 <span class='orig-item'>[원 부] {rank:2d}위</span> | {title[:45]}...<br>"
+                full_report_text += f"🎯 [원 부] {rank}위 | {title[:45]}...\n"
+                found = True
+        
+        if not found:
+            display_html += "❌ 40위 내 검색 결과 없음<br>"
+            full_report_text += "❌ 40위 내 검색 결과 없음\n"
+        
+        display_html += "</div>"
+        st.markdown(display_html, unsafe_allow_html=True)
+        full_report_text += "\n"
+        time.sleep(0.3)
+    
+    # 📋 복사하기 기능 (텍스트 에어리어와 버튼 제공)
+    st.divider()
+    st.subheader("📋 Copy Report")
+    st.text_area("아래 내용을 복사해서 사용하세요.", value=full_report_text, height=200)
