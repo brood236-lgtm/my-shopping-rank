@@ -19,8 +19,8 @@ st.markdown("""
 def get_naver_rank(target, client_id, client_secret):
     url = "https://openapi.naver.com/v1/search/shop.json"
     headers = {
-        "X-Naver-Client-Id": z3Guexy_a5AiWXIDub2e, 
-        "X-Naver-Client-Secret": adgqyvVjXu,
+        "X-Naver-Client-Id": client_id, 
+        "X-Naver-Client-Secret": client_secret,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     }
     
@@ -44,8 +44,8 @@ def get_naver_rank(target, client_id, client_secret):
 # 2. 보안 설정: Secrets에서 값 가져오기 (사이드바 입력창 제거)
 # st.secrets를 사용하면 코드에 직접 노출되지 않습니다.
 try:
-    C_ID = st.secrets["z3Guexy_a5AiWXIDub2e"]
-    C_SECRET = st.secrets["adgqyvVjXu"]
+    C_ID = st.secrets["NAVER_CLIENT_ID"]
+    C_SECRET = st.secrets["NAVER_CLIENT_SECRET"]
 except:
     st.error("⚠️ Streamlit Cloud 설정(Secrets)에서 API 키를 설정해주세요.")
     st.stop()
