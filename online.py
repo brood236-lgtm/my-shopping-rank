@@ -19,8 +19,8 @@ st.markdown("""
 def get_naver_rank(target, client_id, client_secret):
     url = "https://openapi.naver.com/v1/search/shop.json"
     headers = {
-        "X-Naver-Client-Id": client_id, 
-        "X-Naver-Client-Secret": client_secret,
+        "X-Naver-Client-Id": z3Guexy_a5AiWXIDub2e, 
+        "X-Naver-Client-Secret": adgqyvVjXu,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     }
     
