@@ -75,3 +75,45 @@ if st.button("RUN MONITORING"):
         for idx, item in enumerate(items):
             rank = idx + 1
             mall_name = item.get('mallName', '')
+            title = item.get('title', '').replace('<b>', '').replace('</b>', '')
+            product_id = item.get('productId', '')
+
+            # 1. 우리 상품 (빨간색)
+            if target["my_mall"] in mall_name:
+                display_html += f"✅ <span class='my-item'>[내 상품] {rank:2d}위</span> | {title[:45]}...<br>"
+                report_only += f"✅ [내 상품] {rank}위 | {title[:40]}\n"
+                found_in_query = True
+            
+            # 2. 경쟁사 (흰색)
+            for tm in target["target_mall"]:
+                if tm in mall_name:
+                    display_html += f"🚨 <span class='comp-item'>[경쟁사] {rank:2d}위</span> | {title[:45]}...<br>"
+                    report_only += f"🚨 [경쟁사] {rank}위 | {title[:40]}\n"
+                    found_in_query = True
+            
+            # 3. 원부 (파란색)
+            if product_id in target["target_mids"]:
+                display_html += f"🎯 <span class='orig-item'>[원 부] {rank:2d}위</span> | {title[:45]}...<br>"
+                report_only += f"🎯 [원 부] {rank}위 | {title[:40]}\n"
+                found_in_query = True
+        
+        if not found_in_query:
+            display_html += "<span style='color:#777;'>❌ 40위 내 검색 결과 없음</span><br>"
+            report_only += "❌ 40위 내 결과 없음\n"
+        
+        display_html += "</div>"
+        st.markdown(display_html, unsafe_allow_html=True)
+        time.sleep(0.2)
+    
+    # 📋 텍스트 복사 영역 (st.text_area)
+    st.write("---")
+    st.subheader("📋 결과 복사")
+    # label을 비우거나 아주 짧게 처리하여 복사 시 혼선을 방지합니다.
+    st.text_area(
+        label="복사 전용창 (우측 상단 아이콘 클릭)",
+        value=report_only,
+        height=250,
+        key="copy_area"
+    )
+
+    st.success("✅ 모든 조회가 완료되었습니다. 하단 리포트를 복사하세요!")
