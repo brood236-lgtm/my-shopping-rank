@@ -4,12 +4,25 @@ import pandas as pd
 from datetime import datetime
 import time
 
-# 페이지 설정 (웹 브라우저 탭 이름과 아이콘)
-st.set_page_config(page_title="쇼핑 순위 모니터링", page_icon="📊", layout="wide")
+# 1. 터미널 스타일 디자인 설정
+st.set_page_config(page_title="Terminal Monitoring", layout="wide")
+st.markdown("""
+    <style>
+    .reportview-container, .main { background: #0e1117; }
+    .stCodeBlock, div[data-testid="stMarkdownContainer"] { color: #e0e0e0; font-family: 'Courier New', Courier, monospace; }
+    h1, h2, h3 { color: #ffffff !important; }
+    .stButton>button { background-color: #262730; color: white; border-radius: 5px; border: 1px solid #4b4b4b; }
+    .status-text { font-family: 'Courier New', monospace; line-height: 1.6; }
+    </style>
+""", unsafe_allow_html=True)
 
 def get_naver_rank(target, client_id, client_secret):
     url = "https://openapi.naver.com/v1/search/shop.json"
-    headers = {"X-Naver-Client-Id": client_id, "X-Naver-Client-Secret": client_secret}
+    headers = {
+        "X-Naver-Client-Id": client_id, 
+        "X-Naver-Client-Secret": client_secret,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    }
     
     query = target["query"]
     my_mall = target["my_mall"]
@@ -17,71 +30,71 @@ def get_naver_rank(target, client_id, client_secret):
     if isinstance(target_malls, str): target_malls = [target_malls]
     target_mids = target.get("target_mids", [])
 
-    params = {"query": query, "display": 100, "start": 1, "sort": "sim"}
+    # 요청하신 대로 다시 40위까지로 설정
+    params = {"query": query, "display": 40, "start": 1, "sort": "sim"}
     
     try:
         response = requests.get(url, headers=headers, params=params)
         if response.status_code == 200:
-            items = response.json().get('items', [])
-            results = []
+            return response.json().get('items', [])
+    except:
+        return []
+    return []
+
+# 2. 보안 설정: Secrets에서 값 가져오기 (사이드바 입력창 제거)
+# st.secrets를 사용하면 코드에 직접 노출되지 않습니다.
+try:
+    C_ID = st.secrets["z3Guexy_a5AiWXIDub2e"]
+    C_SECRET = st.secrets["adgqyvVjXu"]
+except:
+    st.error("⚠️ Streamlit Cloud 설정(Secrets)에서 API 키를 설정해주세요.")
+    st.stop()
+
+MONITORING_TARGETS = [
+    {"query": "외장하드", "my_mall": "삼성공식파트너 쇼마젠시", "target_mall": ["삼성공식파트너 형연테크"], "target_mids": ["12345678901"]},
+    {"query": "갤럭시워치7", "my_mall": "삼성파트너 쇼마젠시", "target_mall": ["삼성공식파트너 dmac", "삼성공식파트너 올인포케이"], "target_mids": []},
+    {"query": "갤럭시워치8", "my_mall": "삼성파트너 쇼마젠시", "target_mall": ["삼성공식파트너 dmac", "삼성공식파트너 올인포케이"], "target_mids": ["55668557960", "55727507152", "55727496884", "55668573794"]},
+    {"query": "갤럭시핏3", "my_mall": "삼성파트너 쇼마젠시", "target_mall": ["삼성공식파트너 dmac", "삼성공식파트너 올인포케이"], "target_mids": []}
+]
+
+st.title("🖥️ SHOPPING MONITOR TERMINAL")
+
+if st.button("RUN MONITORING"):
+    container = st.container()
+    with container:
+        for target in MONITORING_TARGETS:
+            query = target["query"]
+            st.markdown(f"**🔎 현재 검색 중: [{query}]**")
+            
+            items = get_naver_rank(target, C_ID, C_SECRET)
+            found = False
+            
+            output_html = "<div class='status-text'>"
             for idx, item in enumerate(items):
                 rank = idx + 1
                 mall_name = item.get('mallName', '')
                 title = item.get('title', '').replace('<b>', '').replace('</b>', '')
                 product_id = item.get('productId', '')
 
-                if my_mall and (my_mall in mall_name):
-                    results.append({"검색어": query, "순위": f"{rank}위", "구분": "✅ 내 쇼핑몰", "쇼핑몰명": mall_name, "상품명": title, "raw_rank": rank})
+                # 내 상품
+                if target["my_mall"] in mall_name:
+                    output_html += f"✅ [내 상품] {rank:2d}위 | {title[:40]}...<br>"
+                    found = True
                 
-                for tm in target_malls:
-                    if tm and (tm in mall_name):
-                        results.append({"검색어": query, "순위": f"{rank}위", "구분": "🚨 경쟁사", "쇼핑몰명": mall_name, "상품명": title, "raw_rank": rank})
-                        break
+                # 경쟁사
+                for tm in target["target_mall"]:
+                    if tm in mall_name:
+                        output_html += f"<span style='color:#ff4b4b;'>🚨 [경쟁사] {rank:2d}위</span> | {title[:40]}...<br>"
+                        found = True
                 
-                if product_id in target_mids:
-                    results.append({"검색어": query, "순위": f"{rank}위", "구분": "🎯 원부", "쇼핑몰명": mall_name, "상품명": title, "raw_rank": rank})
-            return results
-    except:
-        return []
-    return []
-
-# === 사이드바 설정 ===
-st.sidebar.title("⚙️ 설정")
-CLIENT_ID = st.sidebar.text_input("네이버 Client ID", value="z3Guexy_a5AiWXIDub2e", type="password")
-CLIENT_SECRET = st.sidebar.text_input("네이버 Client Secret", value="adgqyvVjXu", type="password")
-
-# 🎯 모니터링 타겟 설정
-MONITORING_TARGETS = [
-    {"query": "외장하드", "my_mall": "삼성공식파트너 쇼마젠시", "target_mall": ["삼성공식파트너 형연테크"], "target_mids": ["53122848087","53123371823","52997593981"]},
-    {"query": "갤럭시워치7", "my_mall": "삼성파트너 쇼마젠시", "target_mall": ["삼성공식파트너 dmac", "삼성공식파트너 올인포케이"], "target_mids": []},
-    {"query": "갤럭시워치8", "my_mall": "삼성파트너 쇼마젠시", "target_mall": ["삼성공식파트너 dmac", "삼성공식파트너 올인포케이"], "target_mids": ["55668557960", "55727507152"]},
-    {"query": "갤럭시핏3", "my_mall": "삼성파트너 쇼마젠시", "target_mall": ["삼성공식파트너 dmac", "삼성공식파트너 올인포케이"], "target_mids": []}
-]
-
-# === 메인 화면 ===
-st.title("📊 실시간 쇼핑 순위 대시보드")
-st.write(f"업데이트 시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-
-if st.button("🚀 지금 순위 확인하기"):
-    all_data = []
-    progress_bar = st.progress(0)
-    
-    for i, target in enumerate(MONITORING_TARGETS):
-        res = get_naver_rank(target, CLIENT_ID, CLIENT_SECRET)
-        all_data.extend(res)
-        progress_bar.progress((i + 1) / len(MONITORING_TARGETS))
-        time.sleep(0.5)
-
-    if all_data:
-        df = pd.DataFrame(all_data).sort_values(by=['검색어', 'raw_rank'])
-        display_df = df.drop(columns=['raw_rank'])
-
-        # 결과 테이블 표시
-        st.success("조회가 완료되었습니다!")
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
-
-        # 엑셀 다운로드 버튼
-        csv = display_df.to_csv(index=False).encode('utf-8-sig')
-        st.download_button(label="📥 결과 엑셀(CSV) 다운로드", data=csv, file_name=f"순위결과_{datetime.now().strftime('%m%d_%H%M')}.csv", mime='text/csv')
-    else:
-        st.warning("40위 내에 일치하는 상품이 없습니다.")
+                # 원부
+                if product_id in target["target_mids"]:
+                    output_html += f"<span style='color:#3d9dfd;'>🎯 [원 부] {rank:2d}위</span> | {title[:40]}...<br>"
+                    found = True
+            
+            if not found:
+                output_html += "❌ 40위 내 검색 결과 없음<br>"
+            
+            output_html += "</div><br>"
+            st.markdown(output_html, unsafe_allow_html=True)
+            time.sleep(0.3)
