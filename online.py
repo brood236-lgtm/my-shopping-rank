@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta # timedelta 추가
 import time
 
 # 1. 터미널 스타일 디자인 및 색상 설정
@@ -56,15 +56,14 @@ MONITORING_TARGETS = [
 st.title("🖥️ SHOPPING MONITOR TERMINAL")
 
 if st.button("RUN MONITORING"):
-    # 💡 복사용 텍스트 초기화 (헤더)
-    report_only = f"📊 쇼핑 순위 리포트 ({datetime.now().strftime('%m/%d %H:%M')})\n"
-    report_only += "-" * 30 + "\n"
+    # 💡 한국 시간(KST) 계산 (UTC + 9시간)
+    kst_now = datetime.utcnow() + timedelta(hours=9)
+    report_only = f"📊 쇼핑 순위 리포트 ({kst_now.strftime('%Y-%m-%d %H:%M:%S')})\n"
+    report_only += "=" * 40 + "\n"
     
     for target in MONITORING_TARGETS:
         query = target["query"]
         st.markdown(f"<div class='query-title'>🔎 현재 검색 중: [{query}]</div>", unsafe_allow_html=True)
-        
-        # 리포트 텍스트에도 검색어 추가
         report_only += f"\n🔎 [{query}]\n"
         
         items = get_naver_rank(target, C_ID, C_SECRET)
@@ -78,20 +77,17 @@ if st.button("RUN MONITORING"):
             title = item.get('title', '').replace('<b>', '').replace('</b>', '')
             product_id = item.get('productId', '')
 
-            # 1. 우리 상품 (빨간색)
             if target["my_mall"] in mall_name:
                 display_html += f"✅ <span class='my-item'>[내 상품] {rank:2d}위</span> | {title[:45]}...<br>"
                 report_only += f"✅ [내 상품] {rank}위 | {title[:40]}\n"
                 found_in_query = True
             
-            # 2. 경쟁사 (흰색)
             for tm in target["target_mall"]:
                 if tm in mall_name:
                     display_html += f"🚨 <span class='comp-item'>[경쟁사] {rank:2d}위</span> | {title[:45]}...<br>"
                     report_only += f"🚨 [경쟁사] {rank}위 | {title[:40]}\n"
                     found_in_query = True
             
-            # 3. 원부 (파란색)
             if product_id in target["target_mids"]:
                 display_html += f"🎯 <span class='orig-item'>[원 부] {rank:2d}위</span> | {title[:45]}...<br>"
                 report_only += f"🎯 [원 부] {rank}위 | {title[:40]}\n"
@@ -105,15 +101,13 @@ if st.button("RUN MONITORING"):
         st.markdown(display_html, unsafe_allow_html=True)
         time.sleep(0.2)
     
-    # 📋 텍스트 복사 영역 (st.text_area)
+    # 📋 텍스트 복사 영역
     st.write("---")
-    st.subheader("📋 결과 복사")
-    # label을 비우거나 아주 짧게 처리하여 복사 시 혼선을 방지합니다.
+    st.subheader("📋 리포트 복사")
     st.text_area(
-        label="복사 전용창 (우측 상단 아이콘 클릭)",
+        label="복사 전 전용창 (우측 상단 클릭)",
         value=report_only,
-        height=250,
+        height=300,
         key="copy_area"
     )
-
-    st.success("✅ 모든 조회가 완료되었습니다. 하단 리포트를 복사하세요!")
+    st.success(f"✅ 조회가 완료되었습니다. ({kst_now.strftime('%H:%M:%S')} KST)")
