@@ -56,56 +56,22 @@ MONITORING_TARGETS = [
 st.title("🖥️ SHOPPING MONITOR TERMINAL")
 
 if st.button("RUN MONITORING"):
-    full_report_text = f"📊 모니터링 리포트 ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})\n\n"
+    # 💡 복사용 텍스트 초기화 (헤더)
+    report_only = f"📊 쇼핑 순위 리포트 ({datetime.now().strftime('%m/%d %H:%M')})\n"
+    report_only += "-" * 30 + "\n"
     
     for target in MONITORING_TARGETS:
         query = target["query"]
         st.markdown(f"<div class='query-title'>🔎 현재 검색 중: [{query}]</div>", unsafe_allow_html=True)
-        full_report_text += f"🔎 [{query}]\n"
+        
+        # 리포트 텍스트에도 검색어 추가
+        report_only += f"\n🔎 [{query}]\n"
         
         items = get_naver_rank(target, C_ID, C_SECRET)
-        found = False
+        found_in_query = False
         
         display_html = "<div class='status-text'>"
+        
         for idx, item in enumerate(items):
             rank = idx + 1
             mall_name = item.get('mallName', '')
-            title = item.get('title', '').replace('<b>', '').replace('</b>', '')
-            product_id = item.get('productId', '')
-
-            # 1. 우리 상품 (빨간색)
-            if target["my_mall"] in mall_name:
-                display_html += f"✅ <span class='my-item'>[내 상품] {rank:2d}위</span> | {title[:45]}...<br>"
-                full_report_text += f"✅ [내 상품] {rank}위 | {title[:45]}...\n"
-                found = True
-            
-            # 2. 경쟁사 (흰색)
-            for tm in target["target_mall"]:
-                if tm in mall_name:
-                    display_html += f"🚨 <span class='comp-item'>[경쟁사] {rank:2d}위</span> | {title[:45]}...<br>"
-                    full_report_text += f"🚨 [경쟁사] {rank}위 | {title[:45]}...\n"
-                    found = True
-            
-            # 3. 원부 (파란색)
-            if product_id in target["target_mids"]:
-                display_html += f"🎯 <span class='orig-item'>[원 부] {rank:2d}위</span> | {title[:45]}...<br>"
-                full_report_text += f"🎯 [원 부] {rank}위 | {title[:45]}...\n"
-                found = True
-        
-        if not found:
-            display_html += "<span style='color:#777;'>❌ 40위 내 검색 결과 없음</span><br>"
-            full_report_text += "❌ 40위 내 검색 결과 없음\n"
-        
-        display_html += "</div>"
-        st.markdown(display_html, unsafe_allow_html=True)
-        full_report_text += "\n"
-        time.sleep(0.3)
-    
-    # 📋 텍스트 복사 영역 (st.text_area)
-    st.write("---")
-    st.subheader("📋 리포트 복사하기")
-    st.text_area(
-        label="아래 박스 우측 상단의 아이콘을 눌러 복사하세요.",
-        value=full_report_text,
-        height=300
-    )
