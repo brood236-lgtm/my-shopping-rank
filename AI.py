@@ -46,17 +46,24 @@ NAVER_CLIENT_SECRET = "adgqyvVjXu"
 
 
 # --- [ 2. 네이버 API 전용 검색 함수 ] ---
+import requests
+import re
+import streamlit as st
+
+# (이전 코드의 extract_keywords 등은 그대로 둡니다)
+
+# --- [ 이 부분을 기존 코드 대신 통째로 붙여넣으세요 ] ---
 def search_naver_shopping(keyword, max_rank=40):
     url = "https://openapi.naver.com/v1/search/shop.json"
     headers = {
-        "X-Naver-Client-Id": NAVER_CLIENT_ID,
-        "X-Naver-Client-Secret": NAVER_CLIENT_SECRET
+        "X-Naver-Client-Id": "여기에_발급받은_ID_입력",
+        "X-Naver-Client-Secret": "여기에_발급받은_Secret_입력"
     }
     params = {
         "query": keyword,
-        "display": max_rank, # 한번에 가져올 상품 개수
+        "display": max_rank,
         "start": 1,
-        "sort": "sim" # 유사도순 (기본 검색 결과와 가장 흡사)
+        "sort": "sim"
     }
     
     try:
@@ -69,11 +76,10 @@ def search_naver_shopping(keyword, max_rank=40):
             all_tags = []
             
             for idx, item in enumerate(items, 1):
-                # API 결과에서 불필요한 HTML 태그(<b> 등) 제거
+                # 불필요한 HTML 태그 제거
                 title = re.sub(r'<[^>]*>', '', item['title'])
                 mall = item['mallName']
                 
-                # 상위 5개 상품 키워드 분석용 데이터 수집
                 if idx <= 5:
                     all_tags.extend(extract_keywords(title))
                     
@@ -81,57 +87,13 @@ def search_naver_shopping(keyword, max_rank=40):
             
             return results, all_tags
         else:
-            st.error(f"API 오류: {response.status_code} (ID/Secret을 확인하세요)")
+            st.error(f"API 오류: {response.status_code}")
             return [], []
             
     except Exception as e:
         st.error(f"연결 오류: {e}")
         return [], []
-
-def search_naver_shopping(keyword, max_rank=40):
-    """네이버 쇼핑 검색 크롤링 (API 또는 BeautifulSoup 활용)"""
-    # 주의: 실제 네이버 쇼핑 검색결과는 동적이므로 API 또는 Selenium/Playwright 권장
-    # 본 코드는 구조화를 위한 예시 HTML 파싱 로직입니다.
-    url = f"https://search.shopping.naver.com/search/all?query={keyword}"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    
-    try:
-        response = requests.get(url, headers=headers)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # 실제 DOM 구조에 맞춰 클래스명 수정 필요 (예시 클래스명 사용)
-        items = soup.select('.product_item__MDtDF')[:max_rank]
-        
-        results = []
-        all_tags = []
-        
-        for idx, item in enumerate(items, 1):
-            title_el = item.select_one('.product_title__Mmw2K')
-            mall_el = item.select_one('.product_mall__jmMto')
-            
-            title = title_el.text.strip() if title_el else "상품명 알수없음"
-            mall = mall_el.text.strip() if mall_el else "쇼핑몰 알수없음"
-            
-            # 상위 5개 상품에 대해 AI 인사이트(키워드) 추출
-            if idx <= 5:
-                all_tags.extend(extract_keywords(title))
-                
-            results.append({'rank': idx, 'title': title, 'mall': mall})
-            
-        # 가짜 데이터 반환 (실행 테스트용) - 실제 크롤링 연동 시 아래 Mock 블록 삭제
-        if not results:
-            return generate_mock_data(keyword), []
-            
-        return results, all_tags
-    except Exception as e:
-        st.error(f"크롤링 오류: {e}")
-        return [], []
-
-def generate_mock_data(keyword):
-    """테스트용 가짜 데이터 생성기"""
-    import random
-    malls = MY_MALLS + COMP_MALLS + ['일반쇼핑몰A', '일반쇼핑몰B']
-    return [{'rank': i, 'title': f"{keyword} 테스트 상품 {i}", 'mall': random.choice(malls)} for i in range(1, 41)]
+# --------------------------------------------------------
 
 st.title("🤖 스토어 AI 랭킹 & 인사이트 트래커 (Terminal Ver.)")
 st.text(f"System Time (KST): {get_kst_time()}\nTarget: 쇼마젠시 vs 경쟁사 (형연테크, dmac, 올인포케이)")
