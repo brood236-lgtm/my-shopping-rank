@@ -56,8 +56,8 @@ import streamlit as st
 def search_naver_shopping(keyword, max_rank=40):
     url = "https://openapi.naver.com/v1/search/shop.json"
     headers = {
-        "X-Naver-Client-Id": "여기에_발급받은_ID_입력",
-        "X-Naver-Client-Secret": "여기에_발급받은_Secret_입력"
+        "X-Naver-Client-Id": "z3Guexy_a5AiWXIDub2e",
+        "X-Naver-Client-Secret": "adgqyvVjXu"
     }
     params = {
         "query": keyword,
