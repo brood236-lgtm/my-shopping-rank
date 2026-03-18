@@ -44,6 +44,7 @@ def extract_keywords(title):
 NAVER_CLIENT_ID = "z3Guexy_a5AiWXIDub2e"
 NAVER_CLIENT_SECRET = "adgqyvVjXu"
 
+
 # --- [ 2. 네이버 API 전용 검색 함수 ] ---
 def search_naver_shopping(keyword, max_rank=40):
     url = "https://openapi.naver.com/v1/search/shop.json"
@@ -86,7 +87,6 @@ def search_naver_shopping(keyword, max_rank=40):
     except Exception as e:
         st.error(f"연결 오류: {e}")
         return [], []
-
 
 def search_naver_shopping(keyword, max_rank=40):
     """네이버 쇼핑 검색 크롤링 (API 또는 BeautifulSoup 활용)"""
