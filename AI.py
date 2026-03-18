@@ -25,9 +25,10 @@ st.markdown("""
 # 설정값
 MY_MALLS = ['삼성공식파트너 쇼마젠시', '삼성파트너 쇼마젠시']
 COMP_MALLS = ['삼성공식파트너 형연테크', '삼성공식파트너 dmac', '삼성공식파트너 올인포케이']
-STANDARD_KEYWORDS = ['외장하드', '갤럭시워치7', '갤럭시워치8', '갤럭시핏3','보조배터리','갤럭시S26','탭s11 보호필름']
+STANDARD_KEYWORDS = ['외장하드', '갤럭시워치7', '갤럭시워치8', '갤럭시핏3', '보조배터리', '갤럭시S26', '탭s11 보호필름']
+
 # AI 추천 유도를 위한 대화형 프롬프트 추가
-AI_PROMPTS = ['가벼운 삼성 외장하드 추천해줘', '부모님 선물용 갤럭시워치 추천', '가성비 운동용 스마트워치','기내 반입 가능한 고속충전 보조배터리']
+AI_PROMPTS = ['가벼운 삼성 외장하드 추천해줘', '부모님 선물용 갤럭시워치 추천', '가성비 운동용 스마트워치', '기내 반입 가능한 고속충전 보조배터리']
 
 def get_kst_time():
     tz = pytz.timezone('Asia/Seoul')
@@ -44,20 +45,12 @@ def extract_keywords(title):
 NAVER_CLIENT_ID = "z3Guexy_a5AiWXIDub2e"
 NAVER_CLIENT_SECRET = "adgqyvVjXu"
 
-
 # --- [ 2. 네이버 API 전용 검색 함수 ] ---
-import requests
-import re
-import streamlit as st
-
-# (이전 코드의 extract_keywords 등은 그대로 둡니다)
-
-# --- [ 이 부분을 기존 코드 대신 통째로 붙여넣으세요 ] ---
 def search_naver_shopping(keyword, max_rank=40):
     url = "https://openapi.naver.com/v1/search/shop.json"
     headers = {
-        "X-Naver-Client-Id": "z3Guexy_a5AiWXIDub2e",
-        "X-Naver-Client-Secret": "adgqyvVjXu"
+        "X-Naver-Client-Id": NAVER_CLIENT_ID,
+        "X-Naver-Client-Secret": NAVER_CLIENT_SECRET
     }
     params = {
         "query": keyword,
@@ -151,7 +144,8 @@ with tab2:
                     if mall_style:
                         st.markdown(f"- [{res['rank']}위] <span class='{mall_style}'>{mall}</span> : {res['title']}", unsafe_allow_html=True)
                     else:
-                        st.text(f"- [{res['rank']}위] {mall} : {res['title']}")
+                        # 칙칙한 st.text 대신 st.markdown을 사용하여 선명한 기본 글씨(초록/흰색)로 출력
+                        st.markdown(f"- [{res['rank']}위] {mall} : {res['title']}")
                 
                 # AI 인사이트 도출 (공통 키워드 추출)
                 if tags:
@@ -166,7 +160,6 @@ with tab2:
 # 복사 전용 텍스트 에어리어 (코드 노출 없이 결과값만)
 st.markdown("### [ Report Output ]")
 st.text_area("Ctrl+C로 복사하여 보고용으로 사용하세요.", value=report_text, height=200)
-
 
 try:
     # 프로그램이 끝까지 실행되었을 때 창이 닫히지 않게 함
