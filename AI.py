@@ -40,6 +40,54 @@ def extract_keywords(title):
     stopwords = ['삼성', '정품', '공식', '파트너', '무료배송']
     return [w for w in words if w not in stopwords and len(w) > 1]
 
+# --- [ 1. API 설정값 입력 ] ---
+NAVER_CLIENT_ID = "z3Guexy_a5AiWXIDub2e"
+NAVER_CLIENT_SECRET = "adgqyvVjXu"
+
+# --- [ 2. 네이버 API 전용 검색 함수 ] ---
+def search_naver_shopping(keyword, max_rank=40):
+    url = "https://openapi.naver.com/v1/search/shop.json"
+    headers = {
+        "X-Naver-Client-Id": NAVER_CLIENT_ID,
+        "X-Naver-Client-Secret": NAVER_CLIENT_SECRET
+    }
+    params = {
+        "query": keyword,
+        "display": max_rank, # 한번에 가져올 상품 개수
+        "start": 1,
+        "sort": "sim" # 유사도순 (기본 검색 결과와 가장 흡사)
+    }
+    
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            items = data.get('items', [])
+            
+            results = []
+            all_tags = []
+            
+            for idx, item in enumerate(items, 1):
+                # API 결과에서 불필요한 HTML 태그(<b> 등) 제거
+                title = re.sub(r'<[^>]*>', '', item['title'])
+                mall = item['mallName']
+                
+                # 상위 5개 상품 키워드 분석용 데이터 수집
+                if idx <= 5:
+                    all_tags.extend(extract_keywords(title))
+                    
+                results.append({'rank': idx, 'title': title, 'mall': mall})
+            
+            return results, all_tags
+        else:
+            st.error(f"API 오류: {response.status_code} (ID/Secret을 확인하세요)")
+            return [], []
+            
+    except Exception as e:
+        st.error(f"연결 오류: {e}")
+        return [], []
+
+
 def search_naver_shopping(keyword, max_rank=40):
     """네이버 쇼핑 검색 크롤링 (API 또는 BeautifulSoup 활용)"""
     # 주의: 실제 네이버 쇼핑 검색결과는 동적이므로 API 또는 Selenium/Playwright 권장
