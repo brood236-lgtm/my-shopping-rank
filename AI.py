@@ -19,6 +19,9 @@ st.markdown("""
     h1, h2, h3, h4 { color: #00FF00 !important; }
     hr { border-top: 1px dashed #00FF00; }
     .insight-box { border: 1px solid #00FF00; padding: 10px; margin-top: 10px; background-color: #0a0a0a; }
+    /* 상품명 링크 스타일 추가 */
+    a { color: #00FF00; text-decoration: underline; text-underline-offset: 3px; }
+    a:hover { color: #FFFFFF; text-decoration: underline; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -72,11 +75,12 @@ def search_naver_shopping(keyword, max_rank=40):
                 # 불필요한 HTML 태그 제거
                 title = re.sub(r'<[^>]*>', '', item['title'])
                 mall = item['mallName']
+                link = item.get('link', '#') # API에서 상품 URL 추출
                 
                 if idx <= 5:
                     all_tags.extend(extract_keywords(title))
                     
-                results.append({'rank': idx, 'title': title, 'mall': mall})
+                results.append({'rank': idx, 'title': title, 'mall': mall, 'link': link})
             
             return results, all_tags
         else:
@@ -111,13 +115,17 @@ with tab1:
                     mall = res['mall']
                     rank = res['rank']
                     title = res['title']
+                    link = res['link']
+                    
+                    # 클릭 가능한 상품명 링크 생성 (새 창 열림)
+                    title_link = f"<a href='{link}' target='_blank'>{title}</a>"
                     
                     if mall in MY_MALLS:
-                        st.markdown(f"[{rank}위] <span class='my-mall'>{mall}</span> - {title}", unsafe_allow_html=True)
+                        st.markdown(f"[{rank}위] <span class='my-mall'>{mall}</span> - {title_link}", unsafe_allow_html=True)
                         report_text += f"{rank}위: {mall} (내 쇼핑몰)\n"
                         found_count += 1
                     elif mall in COMP_MALLS:
-                        st.markdown(f"[{rank}위] <span class='comp-mall'>{mall}</span> - {title}", unsafe_allow_html=True)
+                        st.markdown(f"[{rank}위] <span class='comp-mall'>{mall}</span> - {title_link}", unsafe_allow_html=True)
                         report_text += f"{rank}위: {mall} (경쟁사)\n"
                         found_count += 1
                 
@@ -139,13 +147,17 @@ with tab2:
                 # 상위 노출 5개 리스트업
                 for res in results[:5]:
                     mall = res['mall']
+                    title = res['title']
+                    link = res['link']
+                    
+                    # 클릭 가능한 상품명 링크 생성 (새 창 열림)
+                    title_link = f"<a href='{link}' target='_blank'>{title}</a>"
                     mall_style = "my-mall" if mall in MY_MALLS else ("comp-mall" if mall in COMP_MALLS else "")
                     
                     if mall_style:
-                        st.markdown(f"- [{res['rank']}위] <span class='{mall_style}'>{mall}</span> : {res['title']}", unsafe_allow_html=True)
+                        st.markdown(f"- [{res['rank']}위] <span class='{mall_style}'>{mall}</span> : {title_link}", unsafe_allow_html=True)
                     else:
-                        # 칙칙한 st.text 대신 st.markdown을 사용하여 선명한 기본 글씨(초록/흰색)로 출력
-                        st.markdown(f"- [{res['rank']}위] {mall} : {res['title']}")
+                        st.markdown(f"- [{res['rank']}위] {mall} : {title_link}", unsafe_allow_html=True)
                 
                 # AI 인사이트 도출 (공통 키워드 추출)
                 if tags:
