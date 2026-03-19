@@ -51,6 +51,7 @@ MONITORING_TARGETS = [
     {"query": "갤럭시워치7", "my_mall": "삼성파트너 쇼마젠시", "target_mall": ["삼성공식파트너 dmac", "삼성공식파트너 올인포케이"], "target_mids": []},
     {"query": "갤럭시워치8", "my_mall": "삼성파트너 쇼마젠시", "target_mall": ["삼성공식파트너 dmac", "삼성공식파트너 올인포케이"], "target_mids": ["55668557960", "55727507152", "55727496884", "55668573794"]},
     {"query": "갤럭시핏3", "my_mall": "삼성파트너 쇼마젠시", "target_mall": ["삼성공식파트너 dmac", "삼성공식파트너 올인포케이"], "target_mids": []}
+    {"query": "스마트태그2", "my_mall": "삼성파트너 쇼마젠시", "target_mall": [], "target_mids": []}
 ]
 
 st.title("🖥️ SHOPPING MONITOR TERMINAL")
